@@ -10,6 +10,7 @@ set(TERRAIN_SRC_FILES
 	src/graphics/Image.cpp
 	src/graphics/Texture2D.cpp
 	src/graphics/Shader.cpp
+	src/graphics/Vertex.cpp
 	src/loaders/MeshLoader.cpp
 	src/meshes/Grid.cpp
 	src/Camera.cpp
