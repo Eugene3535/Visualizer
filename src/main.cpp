@@ -99,6 +99,10 @@ int main()
 
     glm::mat4 projection = glm::perspective(glm::radians(45.f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
 
+
+    glm::mat4() * glm::vec4();
+
+
     int MVP = shader.getUniformLocation("MVP");
 
     if(MVP == -1)
@@ -123,6 +127,12 @@ int main()
 
     if(!grid.load_from_file(mesh_path))
         return -1;
+
+    {// TEST CASE
+        std::vector<Vertex> vertices;
+        std::vector<std::uint32_t> indices;
+        MeshLoader().load_model_from_file(std::filesystem::path("res/models/rabbit.obj"), vertices, indices);
+    }
 
     Camera camera;
 

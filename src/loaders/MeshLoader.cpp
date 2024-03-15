@@ -1,10 +1,13 @@
 #include <iostream>
 #include <string>
+#include <array>
 #include <sstream>
 #include <fstream>
 #include <algorithm>
 
 #include "loaders/MeshLoader.hpp"
+
+#define STACK_BUFFER_SIZE 64
 
 bool MeshLoader::create_plane(const std::filesystem::path& fpath, GLuint width, GLuint depth) noexcept
 {
@@ -73,9 +76,9 @@ bool MeshLoader::load_mesh_from_file(const std::filesystem::path& fpath, std::ve
 
     if(file_ptr)
     {
-        char buffer[64]{};
+        char buffer[STACK_BUFFER_SIZE]{};
 
-        while (!feof(file_ptr))
+        while(!feof(file_ptr))
         {
             if(fgets(buffer, sizeof(buffer), file_ptr) != nullptr)
             {
@@ -85,7 +88,7 @@ bool MeshLoader::load_mesh_from_file(const std::filesystem::path& fpath, std::ve
                 if (buffer[0] == 'v')
                 {
                     auto& vertex = vertices.emplace_back();
-                    int i = 0;
+                    std::int32_t i = 0;
 
                     while (token != nullptr)
                     {
@@ -113,170 +116,130 @@ bool MeshLoader::load_mesh_from_file(const std::filesystem::path& fpath, std::ve
     return false;
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-bool MeshLoader::load_model_from_file(const std::filesystem::path& fpath, std::vector<Vertex>& vertices, std::vector<std::uint32_t>& indices) noexcept
+bool MeshLoader::load_model_from_file(const std::filesystem::path& fpath, std::vector<Vertex>& vertices, std::vector<GLuint>& indices) noexcept
 {
-    auto split = [](const std::string& src, char delimeter)
+    auto split = [](char* src, const char* delimeter)
     {
-        std::string buffer;
-        std::vector<std::string> result;
+        std::array<const char*, 3> token_ptrs{};
+        char* token = strtok(src, delimeter);
+        token = strtok(nullptr, delimeter);
+        std::size_t n = 0;
 
-        for (std::size_t i = 0; i < src.size(); ++i)
+        while (token != nullptr)
         {
-            char c = src[i];
+            token_ptrs[n] = token;
+            ++n;
+            token = strtok(nullptr, delimeter);
+        }
 
-            if (c != delimeter)
+        return token_ptrs;
+    };
+
+    auto process_vertices = [&split](char* current_line, std::vector<glm::vec3>& positions)
+    {
+        auto string_array = split(current_line, " ");
+
+        float x = static_cast<float>(atof(string_array[0]));
+        float y = static_cast<float>(atof(string_array[1]));
+        float z = static_cast<float>(atof(string_array[2]));
+
+        positions.emplace_back(x, y, z);
+    };
+
+    auto process_uv_coords = [&split](char* current_line, std::vector<glm::vec2>& tex_coords)
+    {
+        auto string_array = split(current_line, " ");
+
+        float u = static_cast<float>(atof(string_array[0]));
+        float v = static_cast<float>(atof(string_array[1]));
+
+        tex_coords.emplace_back(u, v);
+    };
+
+    auto process_normals = [&split](char* current_line, std::vector<glm::vec3>& normals)
+    {
+        auto string_array = split(current_line, " ");
+
+        float x = static_cast<float>(atof(string_array[0]));
+        float y = static_cast<float>(atof(string_array[1]));
+        float z = static_cast<float>(atof(string_array[2]));
+
+        normals.emplace_back(x, y, z);
+    };
+
+    auto process_polygon_indices = [&split](char* current_line, std::vector<GLuint>& vertex_indices, std::vector<GLuint>& uv_indices, std::vector<GLuint>& normal_indices)
+    {
+        auto face_triples = split(current_line, " ");
+
+        for(const char* ptr : face_triples)
+        {
+            char* face = const_cast<char*>(ptr);
+            auto tokens = split(face, "/");
+
+            GLuint index  = strtol(tokens[0], NULL, 10) - 1;
+            GLuint uv     = strtol(tokens[0], NULL, 10) - 1;
+            GLuint normal = strtol(tokens[0], NULL, 10) - 1;
+
+            vertex_indices.push_back(index);
+            uv_indices.push_back(uv);
+            normal_indices.push_back(normal);
+        }
+    };
+
+    std::vector<glm::vec3> positions;
+	std::vector<glm::vec2> unordered_uvs;
+	std::vector<glm::vec3> unordered_normals;
+
+	std::vector<std::uint32_t> uv_indices;
+	std::vector<std::uint32_t> normal_indices;
+
+	std::vector<glm::vec2> ordered_uvs;
+	std::vector<glm::vec3> ordered_normals;
+
+    FILE* file_ptr = fopen(fpath.string().c_str(), "r");
+
+    if(file_ptr)
+    {
+        char buffer[STACK_BUFFER_SIZE]{};
+
+        while(!feof(file_ptr))
+        {
+            if(fgets(buffer, sizeof(buffer), file_ptr) != nullptr)
             {
-                buffer += c;
+                if (buffer[0] == 'v' && buffer[1] == ' ')
+                {
+                    process_vertices(buffer, positions);
+                }
+                else if (buffer[0] == 'v' && buffer[1] == 't')
+                {
+                    process_uv_coords(buffer, unordered_uvs);
+                }
+                else if (buffer[0] == 'v' && buffer[1] == 'n')
+                {
+                    process_normals(buffer, unordered_normals);
+                }
+                else if (buffer[0] == 'f' && buffer[1] == ' ')
+                {
+                    process_polygon_indices(buffer, indices, uv_indices, normal_indices);
+                }
             }
-            else if (c == delimeter && !buffer.empty())
-            { 
-                result.push_back(buffer);
-                buffer.clear();
-            }
-        }
+        }    
 
-        if (!buffer.empty())
-        {
-            result.push_back(buffer);
-        }
+        fclose(file_ptr);
+    }
 
-        return result;
-    };
+	ordered_uvs.resize(unordered_uvs.size());
 
-    auto processVertexPos = [&split](const std::string& currentLine, std::vector<glm::vec3>& list)
-    {
-        std::vector<std::string> floats = split(currentLine, ' ');
-        list.push_back(glm::vec3(stof(floats[1]), stof(floats[2]), stof(floats[3])));
-    };
-
-    auto processVertexUV = [&split](const std::string& currentLine, std::vector<glm::vec2>& list)
-    {
-        std::vector<std::string> floats = split(currentLine, ' ');
-        list.push_back(glm::vec2(stof(floats[1]), stof(floats[2])));
-    };
-
-    auto processVertexNormal = [&split](const std::string& currentLine, std::vector<glm::vec3>& list)
-    {
-        std::vector<std::string> floats = split(currentLine, ' ');
-        list.push_back(glm::vec3(stof(floats[1]), stof(floats[2]), stof(floats[3])));
-    };
-
-    auto processPolygonIndices = [&split](const std::string& currentLine, std::vector<std::uint32_t>& indices, std::vector<std::uint32_t>& uvIndices, std::vector<std::uint32_t>& normalIndices)
-    {
-        std::vector<std::string> faceTriples = split(currentLine, ' ');
-        int vertIndex = 0;
-        for (std::vector<std::string>::iterator i = faceTriples.begin(); i != faceTriples.end(); ++i)
-        {
-            if (vertIndex != 0)
-            {
-                std::vector<std::string> vertIndices = split(*i, '/');
-                indices.push_back(stoi(vertIndices[0]) - 1);
-                uvIndices.push_back(stoi(vertIndices[1]) - 1);
-                normalIndices.push_back(stoi(vertIndices[2]) - 1);
-            }
-            vertIndex++;
-        }
-    };
-
-    if (fpath.empty())
-		return false;
-
-	if(fpath.extension().generic_string() != ".obj")
-		return false;
+	for (std::size_t i = 0; i < uv_indices.size(); ++i)
+		ordered_uvs[indices[i]] = unordered_uvs[uv_indices[i]];
 	
-	std::fstream fs(fpath);
+	ordered_normals.resize(unordered_normals.size());
 
-	if (!fs.is_open())
-	{
-		return false;
-	}
-
-	std::vector<glm::vec3> positions;
-	std::vector<glm::vec2> unorderedUvs;
-	std::vector<glm::vec3> unorderedNormals;
-
-	std::vector<std::uint32_t> posIndices;
-	std::vector<std::uint32_t> uvIndices;
-	std::vector<std::uint32_t> normalIndices;
-
-	std::vector<glm::vec2> orderedUvs;
-	std::vector<glm::vec3> orderedNormals;
-	std::vector<Vertex> resultVertices;
-
-	std::string currentLine;
-
-	while (std::getline(fs, currentLine))
-	{
-		if (currentLine.find("v ") == 0)
-		{
-			processVertexPos(currentLine, positions);
-			continue;
-		}
-
-		if (currentLine.find("vt ") == 0)
-		{
-			processVertexUV(currentLine, unorderedUvs);
-			continue;
-		}
-
-		if (currentLine.find("vn ") == 0)
-		{
-			processVertexNormal(currentLine, unorderedNormals);
-			continue;
-		}
-
-		if (currentLine.find("f ") == 0)
-		{
-			processPolygonIndices(currentLine, posIndices, uvIndices, normalIndices);
-			continue;
-		}
-	}
-	fs.close();
-
-	orderedUvs.resize(unorderedUvs.size());
-
-	std::size_t itter = 0;
-	for (auto i = uvIndices.begin(); i != uvIndices.end(); ++i)
-	{
-		orderedUvs[posIndices[itter]] = unorderedUvs[uvIndices[itter]];
-		itter++;
-	}
-
-	orderedNormals.resize(unorderedNormals.size());
-
-	itter = 0;
-	for (auto i = normalIndices.begin(); i != normalIndices.end(); ++i)
-	{
-		orderedNormals[posIndices[itter]] = unorderedNormals[normalIndices[itter]];
-		itter++;
-	}
-
-	itter = 0;
-	for (auto i = positions.begin(); i != positions.end(); ++i)
-	{
-		resultVertices.push_back(Vertex(*i, orderedUvs[itter], orderedNormals[itter], {1,1,1,1}));
-		itter++;
-	}
-
-	vertices.resize(resultVertices.size());
-	indices.resize(posIndices.size());
-
-	std::swap(resultVertices, vertices);
-	std::swap(posIndices, indices);
+	for (std::size_t i = 0; i < normal_indices.size(); ++i)
+		ordered_normals[indices[i]] = unordered_normals[normal_indices[i]];
+	
+	for (std::size_t i = 0; i < positions.size(); ++i)
+		vertices.emplace_back(positions[i], ordered_uvs[i], ordered_normals[i], glm::vec4(1.0f));
 
 	return true;
 }
