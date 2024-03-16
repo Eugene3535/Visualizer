@@ -1,4 +1,3 @@
-#include <iostream>
 #include <memory>
 
 #include <glad/glad.h>
@@ -12,6 +11,7 @@
 #include "graphics/Shader.hpp"
 #include "loaders/MeshLoader.hpp"
 #include "meshes/Grid.hpp"
+#include "meshes/ObjectModel.hpp"
 
 const unsigned SCR_WIDTH = 1200;
 const unsigned SCR_HEIGHT = 800;
@@ -41,8 +41,8 @@ int main()
 
     if (!window)
     {
-        std::cout << "Failed to create GLFW window\n";
         glfwTerminate();
+
         return -1;
     }
 
@@ -60,8 +60,8 @@ int main()
 
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
     {
-        std::cout << "Failed to initialize GLAD\n";
         glfwTerminate();
+
         return -1;
     }
 
@@ -84,31 +84,34 @@ int main()
 #endif
 
 //  Shaders
-    Shader shader;
+    Shader grid_shader;
     {
-        bool sucsess = (shader.compile("res/shaders/shader.vert", "res/shaders/shader.frag"));
-
-        if(!sucsess)
+        if(!grid_shader.compile("res/shaders/shader.vert", "res/shaders/shader.frag"))
         {
-            std::cout << "Failed to compile shader\n";
             glfwTerminate();
+
             return -1;
         }
     }
-    shader.bind(&shader);
+    grid_shader.bind(&grid_shader);
 
-    glm::mat4 projection = glm::perspective(glm::radians(45.f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
-
-
-    glm::mat4() * glm::vec4();
-
-
-    int MVP = shader.getUniformLocation("MVP");
-
-    if(MVP == -1)
+    Shader model_shader;
     {
-        std::cout << "Failed to set uniform\n";
+        if(!model_shader.compile("res/shaders/object_shader.vert", "res/shaders/object_shader.frag"))
+        {
+            glfwTerminate();
+
+            return -1;
+        }
+    }
+
+    int grid_mvp = grid_shader.getUniformLocation("MVP");
+    int model_mvp = model_shader.getUniformLocation("MVP");
+
+    if((grid_mvp == -1) || (model_mvp == -1))
+    {
         glfwTerminate();
+
         return -1;
     }
 
@@ -128,13 +131,18 @@ int main()
     if(!grid.load_from_file(mesh_path))
         return -1;
 
-    {// TEST CASE
-        std::vector<Vertex> vertices;
-        std::vector<std::uint32_t> indices;
-        MeshLoader().load_model_from_file(std::filesystem::path("res/models/rabbit.obj"), vertices, indices);
-    }
+    ObjectModel model;
+
+    glm::mat4 model_transform = 
+    glm::translate(glm::identity<glm::mat4>(), glm::vec3(20, 1, 20)) * 
+    glm::rotate(glm::identity<glm::mat4>(), glm::radians(45.0f), glm::vec3(0, 1, 0)) *
+    glm::scale(glm::identity<glm::mat4>(), glm::vec3(2, 2, 2));
+
+    if(!model.load_from_file(std::filesystem::path("res/models/rabbit.obj")))
+        return -1;
 
     Camera camera;
+    glm::mat4 projection = glm::perspective(glm::radians(45.f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 10000.0f);
 
 //  Main loop
     while (!glfwWindowShouldClose(window))
@@ -168,16 +176,24 @@ int main()
             camUpdate = false;
         }
 
-        Shader::bind(&shader);
-
-        glUniformMatrix4fv(MVP, 1, GL_FALSE, glm::value_ptr(projection * camera.getViewMatrix()));
+        glm::mat4 view_projection_matrix = projection * camera.getViewMatrix();
 
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-//      glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        // glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
+//      GRID
+        Shader::bind(&grid_shader); 
+        glUniformMatrix4fv(grid_mvp, 1, GL_FALSE, glm::value_ptr(view_projection_matrix));  
         grid.draw();
+
+//      MODEL
+        Shader::bind(&model_shader);
+        glUniformMatrix4fv(model_mvp, 1, GL_FALSE, glm::value_ptr(view_projection_matrix * model_transform));  
+        model.draw();
+
+        Shader::bind(nullptr);
 
         glfwSwapBuffers(window);
         glfwPollEvents();

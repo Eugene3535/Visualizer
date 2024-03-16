@@ -13,6 +13,7 @@ set(TERRAIN_SRC_FILES
 	src/graphics/Vertex.cpp
 	src/loaders/MeshLoader.cpp
 	src/meshes/Grid.cpp
+	src/meshes/ObjectModel.cpp
 	src/Camera.cpp
 	src/main.cpp
 )
