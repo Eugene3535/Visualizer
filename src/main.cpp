@@ -7,7 +7,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "Camera.hpp"
+#include "view/Camera.hpp"
 #include "graphics/Shader.hpp"
 #include "loaders/MeshLoader.hpp"
 #include "meshes/Grid.hpp"

@@ -10,7 +10,7 @@ Grid::Grid() noexcept:
     m_vao(0),
     m_vbo(0),
     m_ibo(0),
-    m_indexCount(0)
+    m_index_count(0)
 {
 }
 
@@ -29,7 +29,7 @@ bool Grid::load_from_file(const std::filesystem::path& fpath) noexcept
     if(!MeshLoader().load_mesh_from_file(fpath, vertices, indices))
         return false;
 
-    m_indexCount = static_cast<GLuint>(indices.size());
+    m_index_count = static_cast<GLuint>(indices.size());
 
     glGenVertexArrays(1, &m_vao);
 	glGenBuffers(1, &m_vbo);
@@ -54,6 +54,6 @@ bool Grid::load_from_file(const std::filesystem::path& fpath) noexcept
 void Grid::draw() const noexcept
 {
     glBindVertexArray(m_vao);
-    glDrawElements(GL_TRIANGLES, m_indexCount, GL_UNSIGNED_INT, nullptr);
+    glDrawElements(GL_TRIANGLES, m_index_count, GL_UNSIGNED_INT, nullptr);
     glBindVertexArray(0);
 }

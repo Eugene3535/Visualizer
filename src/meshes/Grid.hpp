@@ -16,7 +16,7 @@ private:
     unsigned m_vao;
     unsigned m_vbo;
     unsigned m_ibo;
-    unsigned m_indexCount;
+    unsigned m_index_count;
 };
 
 #endif // !GRID_HPP
