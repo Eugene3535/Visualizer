@@ -55,6 +55,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 	"${THIRD_PARTY_LIB_DIR}/glfw/include"
 	"${THIRD_PARTY_LIB_DIR}/glad/include"
 	"${THIRD_PARTY_LIB_DIR}/glm/include"
+	"${THIRD_PARTY_LIB_DIR}/assimp/include"
 	"${EXTERNAL_DIR}/stb"
 	"${PROJECT_SOURCE_DIR}/src"
 )
@@ -63,6 +64,7 @@ target_link_libraries(${PROJECT_NAME}
 	"${THIRD_PARTY_LIB_DIR}/glfw/lib/glfw3$<$<CONFIG:Debug>:d>dll.lib"
 	"${THIRD_PARTY_LIB_DIR}/glad/lib/glad$<$<CONFIG:Debug>:d>.lib"
 	"${THIRD_PARTY_LIB_DIR}/glm/lib/glm$<$<CONFIG:Debug>:d>.lib"
+	"${THIRD_PARTY_LIB_DIR}/assimp/lib/assimp-vc142-mt$<$<CONFIG:Debug>:d>.lib"
 )
 
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
