@@ -10,8 +10,6 @@
 #include "view/Camera.hpp"
 #include "graphics/Shader.hpp"
 #include "loaders/MeshLoader.hpp"
-#include "meshes/Grid.hpp"
-#include "meshes/ObjectModel.hpp"
 
 const unsigned SCR_WIDTH = 1200;
 const unsigned SCR_HEIGHT = 800;
@@ -115,31 +113,19 @@ int main()
         return -1;
     }
 
-    std::filesystem::path mesh_path("res/meshes/plane.txt");
-    
-    if(!std::filesystem::exists(mesh_path))
+    std::vector<VertexBuffer> meshes;
+
+    if(!MeshLoader().load_meshes_from_file("res/models/cube.obj", meshes))
     {
-        if(!std::filesystem::create_directory(std::filesystem::path("res/meshes")))
-            return -1;;
+        glfwTerminate();
 
-        if(!MeshLoader().create_plane(mesh_path, 40, 40)) // grid size in cells
-            return -1;
-    }
-
-    Grid grid;
-
-    if(!grid.load_from_file(mesh_path))
         return -1;
-
-    ObjectModel model;
+    }
 
     glm::mat4 model_transform = 
     glm::translate(glm::identity<glm::mat4>(), glm::vec3(20, 1, 20)) * 
     glm::rotate(glm::identity<glm::mat4>(), glm::radians(45.0f), glm::vec3(0, 1, 0)) *
     glm::scale(glm::identity<glm::mat4>(), glm::vec3(2, 2, 2));
-
-    if(!model.load_from_file(std::filesystem::path("res/models/rabbit.obj")))
-        return -1;
 
     Camera camera;
     glm::mat4 projection = glm::perspective(glm::radians(45.f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 10000.0f);
@@ -183,15 +169,10 @@ int main()
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
         // glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-//      GRID
-        Shader::bind(&grid_shader); 
-        glUniformMatrix4fv(grid_mvp, 1, GL_FALSE, glm::value_ptr(view_projection_matrix));  
-        grid.draw();
-
 //      MODEL
         Shader::bind(&model_shader);
-        glUniformMatrix4fv(model_mvp, 1, GL_FALSE, glm::value_ptr(view_projection_matrix * model_transform));  
-        model.draw();
+        glUniformMatrix4fv(model_mvp, 1, GL_FALSE, glm::value_ptr(view_projection_matrix * model_transform)); 
+        meshes[0].draw(); 
 
         Shader::bind(nullptr);
 

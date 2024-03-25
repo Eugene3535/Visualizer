@@ -2,8 +2,6 @@
 
 out vec4 FragColor;
 
-in vec4 outColor;
-
 void main()
 {
     // FragColor = texture2D(texture0, tex_coord) * outColor;

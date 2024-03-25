@@ -4,16 +4,16 @@
 #include <filesystem>
 #include <vector>
 
-#include <glad/glad.h>
-
-#include "graphics/Vertex.hpp"
+#include "graphics/VertexBuffer.hpp"
 
 class MeshLoader
 {
 public:
-    bool create_plane(const std::filesystem::path& fpath, GLuint width, GLuint depth) noexcept;
-	bool load_mesh_from_file(const std::filesystem::path& fpath, std::vector<glm::vec3>& vertices, std::vector<GLuint>& indices) noexcept;
-    bool load_model_from_file(const std::filesystem::path& fpath, std::vector<Vertex>& vertices, std::vector<GLuint>& indices) noexcept;
+	bool load_meshes_from_file(const std::filesystem::path& fpath, std::vector<VertexBuffer>& meshes) noexcept;
+
+private:
+    void process_node(struct aiNode* node, const struct aiScene* scene, std::vector<VertexBuffer>& meshes) noexcept;
+    VertexBuffer process_mesh(const struct aiMesh* mesh, const struct aiScene* scene) noexcept;
 };
 
 #endif // !MESH_LOADER_HPP

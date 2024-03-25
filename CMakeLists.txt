@@ -13,10 +13,8 @@ set(VISUALIZER_SRC_FILES
 	src/graphics/Image.cpp
 	src/graphics/Texture2D.cpp
 	src/graphics/Shader.cpp
-	src/graphics/Vertex.cpp
+	src/graphics/VertexBuffer.cpp
 	src/loaders/MeshLoader.cpp
-	src/meshes/Grid.cpp
-	src/meshes/ObjectModel.cpp
 	src/view/Camera.cpp
 	src/main.cpp
 )
@@ -26,9 +24,8 @@ set(VISUALIZER_HDR_FILES
 	src/graphics/Texture2D.hpp
 	src/graphics/Shader.hpp
 	src/graphics/Vertex.hpp
+	src/graphics/VertexBuffer.hpp
 	src/loaders/MeshLoader.hpp
-	src/meshes/Grid.hpp
-	src/meshes/ObjectModel.hpp
 	src/view/Camera.hpp
 )
 
@@ -43,8 +40,8 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 		get_filename_component(source_path "${source}" PATH)
 		string(REPLACE "/" "\\" source_path_msvc "${source_path}")
 		source_group("${source_path_msvc}" FILES "${source}")
-
 	endforeach()
+
 endif()
 
 add_executable(${PROJECT_NAME} ${VISUALIZER_SRC_FILES} ${VISUALIZER_HDR_FILES})
@@ -77,6 +74,7 @@ if(WIN32)
         COMMAND ${CMAKE_COMMAND} -E copy ${EXTERNAL_DIR}/install/glfw/bin/glfw3$<$<CONFIG:Debug>:d>.dll $<TARGET_FILE_DIR:${PROJECT_NAME}>/glfw3$<$<CONFIG:Debug>:d>.dll
         COMMAND ${CMAKE_COMMAND} -E copy ${EXTERNAL_DIR}/install/glad/bin/glad$<$<CONFIG:Debug>:d>.dll  $<TARGET_FILE_DIR:${PROJECT_NAME}>/glad$<$<CONFIG:Debug>:d>.dll
         COMMAND ${CMAKE_COMMAND} -E copy ${EXTERNAL_DIR}/install/glm/bin/glm$<$<CONFIG:Debug>:d>.dll    $<TARGET_FILE_DIR:${PROJECT_NAME}>/glm$<$<CONFIG:Debug>:d>.dll
+        COMMAND ${CMAKE_COMMAND} -E copy ${EXTERNAL_DIR}/install/assimp/bin/assimp-vc142-mt$<$<CONFIG:Debug>:d>.dll $<TARGET_FILE_DIR:${PROJECT_NAME}>/assimp-vc142-mt$<$<CONFIG:Debug>:d>.dll
     )
 endif(WIN32)
 	
