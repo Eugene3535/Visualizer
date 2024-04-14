@@ -35,7 +35,7 @@ int main()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Grid", nullptr, nullptr);
+    window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Visualizer", nullptr, nullptr);
 
     if (!window)
     {
@@ -115,7 +115,7 @@ int main()
 
     std::vector<VertexBuffer> meshes;
 
-    if(!MeshLoader().load_meshes_from_file("res/models/cube.obj", meshes))
+    if(!MeshLoader().load_meshes_from_file("res/models/House_Models.obj", meshes))
     {
         glfwTerminate();
 
@@ -172,7 +172,9 @@ int main()
 //      MODEL
         Shader::bind(&model_shader);
         glUniformMatrix4fv(model_mvp, 1, GL_FALSE, glm::value_ptr(view_projection_matrix * model_transform)); 
-        meshes[0].draw(); 
+
+        for(auto& m : meshes)
+            m.draw();
 
         Shader::bind(nullptr);
 
